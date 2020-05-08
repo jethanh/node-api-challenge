@@ -38,13 +38,19 @@ router.get('/:id/actions', (req, res) => {
 
 router.post('/', (req, res) => {
     const info = req.body;
-    Project.insert(info)
-      .then(item => {
-        res.status(201).json(item)
-      })
-      .catch(err => {
-        res.status(500).json({ errorMessage: "Somethin' went wrong, bucko." })
-      })
+    if(!info.name || !info.description){
+        res.status(400).json({ errorMessage: "Please provide name and description" })
+    } else if(info.description.length > 128){
+        res.status(400).json({ errorMessage: "Description too long" })
+    } else {
+        Project.insert(info)
+        .then(item => {
+          res.status(201).json(item)
+        })
+        .catch(err => {
+          res.status(500).json({ errorMessage: "Somethin' went wrong, bucko." })
+        })
+    }
   });
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -79,18 +85,61 @@ router.delete('/:id', (req, res) => {
 //update project
 
 router.put('/:id', (req, res) => {
-    console.log(req.body)
-    console.log(req.params)
-    const { id } = req.params;
-    const changes = req.body;
+    const changes = req.body
     Project.update(id, changes)
-      .then(item => {
+    .then(newInfo => {
+      if(newInfo){
+        Project.getById(id)
+        .then(item => {
           res.status(200).json(item)
         })
-      .catch(err =>
-        res.send(500).json({ errorMessage: "Somethin' went wrong, bucko." })
-      );
+        .catch(err => {
+          res.status(500).json({ errorMessage: "Somethin' went wrong, bucko." })
+        })
+      } else {
+        res.status(500).json({ errorMessage: "Somethin' went wrong, bucko." })
+      }
+    })
+    .catch(err => {
+      res.status(500).json({ errorMessage: "Somethin' went wrong, bucko." })
+    })
+
+});
+
+// ----------------------------------------------------------------------------------------------------------------
+
+//post an action to a project
+
+router.post('/:id/actions', validatePost, (req, res) => {
+    req.body.project_id = req.project
+    if(!req.body.notes || !req.body.description){
+        res.status(400).json({ error: 'desc and notes required' })
+        } else {
+        Action.insert(req.body)
+            .then(item => {
+            res.status(201).json(item);
+      })
+            .catch(err => {
+            res.status(500).json({ errorMessage: "Somethin' went wrong, bucko" })
+      })}
+      
   });
+
+router.post('/:id/actions')
+
+
+function validatePost(req, res, next) {
+    Project.get(req.params.id)
+        .then(item => {
+            if (item) {
+                req.body.project_id = item.project_id
+                req.project = req.params.id
+                next();
+            } else {
+                res.status(400).json({ error: "Project not found" })
+            }
+        })
+}
 
 
 

@@ -6,6 +6,7 @@ server.use(express.json());
 const projectRouter = require('./data/projectRouter.js')
 const actionRouter = require('./data/actionRouter.js')
 server.use('/api/projects', projectRouter)
+server.use('/api/actions', actionRouter)
 
 
 
